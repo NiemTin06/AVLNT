@@ -6,105 +6,177 @@ struct Node{
     int data;
     Node* left;
     Node* right;
-    int height;
+    int height; // chieu cao cua node
 };
 
-Node* makeNode(int x){
-    Node* p = new Node;
-    p->data = x;
-    p->left = NULL;
-    p->right = NULL;
-    p->height = 1;
-    return p;
+typedef Node* Tree;
+
+// Ham tao node moi
+Tree makeNode(int x){
+    Tree T = new Node;
+    T->data = x;
+    T->left = NULL;
+    T->right = NULL;
+    T->height = 1;
+    return T;
 }
 
-int maxheight(Node* l, Node* r){
-    int pl = (l == NULL)? 0 : l->height;
-    int pr = (r == NULL)? 0 : r->height;
+void MakeNULL(Tree &T){
+    T = NULL;
+}
+
+//AVL
+int maxheight(Tree  T){
+    int pl = (T->left == NULL)? 0 : T->left->height;
+    int pr = (T->right == NULL)? 0 : T->right->height;
     return (pl > pr) ? pl : pr;
 }
 
-int baln(Node* root){
-    int pl = (root->left == NULL)? 0 : root->left->height;
-    int pr = (root->right == NULL)? 0 : root->right->height;
-    return pr - pl;
-}
-void updateHeight(Node* &p) {
-    if (p == nullptr) return;
-    p->height = maxheight(p->left, p->right) + 1;
+//tim chi so can bang cua cay
+int baln(Tree T){
+    int pl = 0; 
+    int pr = 0;
+    if (T->left == NULL) pl = 0;
+    else pl = T->left->height;
+    if (T->right == NULL) pr = 0;
+    else pr = T->right->height;
+    return pl - pr;
 }
 
-int is_balance(Node* p){
-    int hl = 0;
-    int hr = 0;
-    if (p->left != NULL){
-        hl = p->left->height;
-    }
-    if (p->right != NULL){
-        hr = p->right->height;
-    }
-    int idx = hr - hl;
-    if (idx > 1) return 1;
-    if (idx < -1) return -1;
+//ham cap nhat chieu cao sau khi quay
+void updateheight(Tree &T){
+    if (T == NULL) return;
+    T->height = maxheight(T) + 1;
+}
+
+// Ham danh gia mot Node co bi mat can bang hay khong
+int is_baln(Tree T){
+    int tmp = baln(T);
+    if (tmp > 1) return 1;
+    else if (tmp < -1) return -1;
     return 0;
 }
 
-void rotaterightright(Node* &root){
-    Node* tmp = root->left;
-    root->left = tmp->right;
-    tmp->right = root;
-    root = tmp;
+// Xu ly l - L
+void rotateright(Tree &T){
+    Tree tmp = T;
+    T  = T->left;
+    tmp->left = T->right;
+    T->right = tmp;
 
-    Node *ph = root->right;
-    updateHeight(ph);
-    updateHeight(root);
-}
-void rotaterleftleft(Node* &root){
-    Node* tmp = root->right;
-    root->right = tmp->left;
-    tmp->left = root;
-    root = tmp;
-
-    Node *ph = root->left;
-    updateHeight(ph);
-    updateHeight(root);
+    updateheight(tmp);
+    updateheight(T);
 }
 
-void rotaterleftright(Node* &root){
-    rotaterleftleft(root->left);
-    rotaterightright(root);
+// xu ly R - R
+void rotateleft(Tree &T){
+    Tree tmp = T;
+    T  = T->right;
+    tmp->right= T->left;
+    T->left = tmp;
+
+    updateheight(T);
+    updateheight(tmp);
 }
 
-void rotaterrightleft(Node* &root){
-    rotaterightright(root->right);
-    rotaterleftleft(root);
+// xu ly  R - L
+void rotateleftright(Tree &T){
+    rotateleft(T->left);
+    rotateright(T);
 }
 
-void balancetree(Node *&root){
-    if (root == NULL) return ;
-    balancetree(root->left);
-    balancetree(root->right);
-    int bal = is_balance(root);
-    if (bal == -1){
-        Node*p1 = root->left;
-        int idx = baln(p1);
-        if (idx <= 0) {
-            rotaterightright(root);
-        }
-        else {
-            rotaterleftright(root);
-        }
-    }
-    else if (bal == 1){
-        Node*p1 = root->right;
+// xu ly  L - R
+void rotaterightleft(Tree &T){
+    rotateright(T->right);
+    rotateleft(T);
+}
+
+//Kiem tra cay da can bang hay chua
+void balancetree(Tree &T){
+    if (T == NULL) return ;
+    balancetree(T->left);
+    balancetree(T->right);
+    int bal = is_baln(T);
+    if (bal == 1){
+        Node*p1 = T->left;
         int idx = baln(p1);
         if (idx >= 0) {
-            rotaterleftleft(root);
+            rotateright(T);
         }
         else {
-            rotaterrightleft(root);
+            rotateleftright(T);
         }
     }
+    else if (bal == -1){
+        Node*p1 = T->right;
+        int idx = baln(p1);
+        if (idx <= 0) {
+            rotateleft(T);
+        }
+        else {
+            rotaterightleft(T);
+        }
+    }
+    updateheight(T);
+}
+
+// End AVL
+
+// tim kiem phan tu
+bool check(Tree T, int x){
+    if (T == NULL) return false;
+    if (T->data == x) return true;
+    else {
+        if (T->data > x) return check(T->left, x) ;
+        else  return check(T->right, x) ;
+    }
+}
+
+// Chen phan tu 
+void insertNode(Tree &T, int x){
+    if (T == NULL) T = makeNode(x);
+    else{
+        if (T->data > x) insertNode(T->left, x);
+        else if (T->data < x) insertNode(T->right, x);
+    }
+    updateheight(T);
+    balancetree(T);
+}
+
+
+int minNode(Tree &T){
+    if (T->left == NULL){
+        int tmp = T->data;
+        Tree tmpNode = T;
+        T = T->right;
+        delete tmpNode;
+        return tmp;
+    }
+    else return minNode(T->left);
+}
+
+// Xoa phan tu 
+void deleteNode(Tree &T, int x){
+    if (T == NULL) return ;
+    if (T->data > x) deleteNode(T->left, x);
+   else if (T->data < x) deleteNode(T->right, x);
+   else{ 
+        if(T->left == NULL){
+            Tree tmp = T;
+            T = T->right;
+            delete tmp;
+        }
+        else if(T->right == NULL){
+            Tree tmp = T;
+            T = T->left;
+            delete tmp;
+        }
+        else {
+            T->data = minNode(T->right);
+        }
+   }
+   updateheight(T);
+    balancetree(T);
 }
 int main(){
     return 0;
